@@ -40,11 +40,23 @@ def calculate_ppf(yearly_deposit, time):
     interest = amount - (yearly_deposit * time)
     return amount, interest
 
+def calculate_sip(monthly_investment, expected_return, time_years):
+    monthly_rate = expected_return / (12 * 100)
+    months = time_years * 12
+    
+    # Calculate future value using SIP formula
+    future_value = monthly_investment * ((1 + monthly_rate) * ((1 + monthly_rate)**months - 1) / monthly_rate)
+    
+    total_investment = monthly_investment * months
+    total_returns = future_value - total_investment
+    
+    return future_value, total_investment, total_returns
+
 def main():
     st.title("Financial Calculator Hub")
     
     calculator_type = st.sidebar.selectbox(
-        "Select Calculator",
+        "Select Calculator Type",
         ["Loan - Basic", "Loan - Advanced", "Fixed Deposit", "Recurring Deposit",
          "PPF", "Sukanya Samriddhi", "Senior Citizens Savings", "Kisan Vikas Patra",
          "Monthly Income Scheme", "National Savings Certificate", "SIP Calculator"]
@@ -111,6 +123,48 @@ def main():
             st.write(f"Maturity Amount: ₹{amount:.2f}")
             st.write(f"Total Interest: ₹{interest:.2f}")
             st.write(f"Total Deposit: ₹{yearly_deposit * time:.2f}")
+
+    elif calculator_type == "SIP Calculator":
+        st.header("SIP (Systematic Investment Plan) Calculator")
+        monthly_investment = st.number_input("Monthly Investment Amount (₹)", min_value=100)
+        expected_return = st.number_input("Expected Annual Return (%)", min_value=1.0, value=12.0)
+        time_years = st.number_input("Investment Period (Years)", min_value=1)
+        
+        if st.button("Calculate"):
+            future_value, total_investment, total_returns = calculate_sip(monthly_investment, expected_return, time_years)
+            
+            st.write(f"Future Value: ₹{future_value:,.2f}")
+            st.write(f"Total Investment: ₹{total_investment:,.2f}")
+            st.write(f"Total Returns: ₹{total_returns:,.2f}")
+            
+            # Create a breakdown of investment vs returns
+            data = {
+                'Component': ['Total Investment', 'Total Returns'],
+                'Amount': [total_investment, total_returns]
+            }
+            df = pd.DataFrame(data)
+            st.bar_chart(df.set_index('Component'))
+            
+            # Monthly investment table
+            years = list(range(1, time_years + 1))
+            yearly_data = []
+            
+            for year in years:
+                fv, inv, ret = calculate_sip(monthly_investment, expected_return, year)
+                yearly_data.append({
+                    'Year': year,
+                    'Investment': inv,
+                    'Returns': ret,
+                    'Total Value': fv
+                })
+            
+            st.subheader("Year-wise Breakdown")
+            yearly_df = pd.DataFrame(yearly_data)
+            st.dataframe(yearly_df.style.format({
+                'Investment': '₹{:,.2f}',
+                'Returns': '₹{:,.2f}',
+                'Total Value': '₹{:,.2f}'
+            }))
 
     # Add similar sections for other calculators...
 
